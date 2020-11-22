@@ -3,10 +3,10 @@
 
 import xmlrpc.client
 
-s = xmlrpc.client.ServerProxy('http://localhost:8000')
-print(s.pow(2, 3))  # Returns 2**3 = 8
-print(s.add(2, 3))  # Returns 5
-print(s.mul(5, 2))  # Returns 5*2 = 10
+ws2812srv = xmlrpc.client.ServerProxy('http://localhost:8000')
 
-# Print list of available methods
-print(s.system.listMethods())
+print(ws2812srv.addAnimation(5, 'powerup'))
+print(ws2812srv.addAnimation(5, 'powerup'))
+print(ws2812srv.addAnimation(1, 'wipe'))
+print(ws2812srv.clrAnimations())
+print(ws2812srv.addAnimation(5, 'powerdown'))
