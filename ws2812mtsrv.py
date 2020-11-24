@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*
 
 import time
@@ -219,6 +219,7 @@ if __name__ == '__main__':
     server.start()
 
     # Queue powerup animation
+    script.put(Animation('wipe', BLACK))
     script.put(Animation('powerup', TEAL))
     script.put(Animation('wipe', BLACK))
 
@@ -233,9 +234,6 @@ if __name__ == '__main__':
 
     # Intialize the library (must be called once before other functions)
     pixels.begin()
-
-    # Clear all pixels
-    pixels.clear()
 
     print('Press Ctrl-C to quit.')
     if not args.clear:
