@@ -13,6 +13,21 @@ import argparse
 HOST = 'localhost'
 PORT = 8000
 
+# Configuration of daisychained strips and rings
+RING_ONE_LENGTH = 24
+
+# Sum of all LEDs
+LED_NUMBER = RING_ONE_LENGTH
+
+# Timebase
+DELAY = 0.02            # 50 Fps
+
+# Some calculations for the animations
+RING_ONE_START = 0                      # 0
+RING_ONE_FIRST = RING_ONE_START + 1     # 1
+RING_ONE_HALF = RING_ONE_LENGTH // 2    # 12
+RING_ONE_LAST = RING_ONE_LENGTH - 1     # 23
+
 # Neopixel configuration
 LED_PIN = 18            # GPIO connected to pixels (18 uses PWM!)
 LED_FREQ_HZ = 800000    # LED signal frequency in hertz
@@ -20,20 +35,6 @@ LED_DMA = 10            # DMA channel to use for generating signal (try 10)
 LED_BRIGHTNESS = 50     # Set to 0 for darkest and 255 for brightest
 LED_INVERT = False      # True to invert (whith NPN transistor level shift)
 LED_CHANNEL = 0         # Set to '1' for GPIOs 13, 19, 41, 45 or 53
-
-DELAY = 0.02            # 50 Fps
-
-# Configuration of daisychained strips and rings
-RING_ONE_LENGTH = 24
-
-# Sum of all LEDs
-LED_NUMBER = RING_ONE_LENGTH
-
-# Some calculations for the animations
-RING_ONE_START = 0                      # 0
-RING_ONE_FIRST = RING_ONE_START + 1     # 1
-RING_ONE_HALF = RING_ONE_LENGTH // 2    # 12
-RING_ONE_LAST = RING_ONE_LENGTH - 1     # 23
 
 # Some colors
 BLACK = Color(0, 0, 0)
@@ -50,34 +51,59 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)
 
 
-class Animation(object):
-    """ Animations consist of description, color, value and change """
-    def __init__(self, description, color=BLACK, value=0, change=0):
-        self.description = description
-        self.color = color
-        self.value = value
-        self.change = change
-        print('New request for animation {0} received'.format(description))
-        return
-
-
 # Register an instance; all the methods of the instance are
 # published as XML-RPC methods
 class RemoteProcedures:
-    def addAnimation(self, description, color, value, change):
-        script.put(Animation(description, color))
-        print('Animation {0} added to script'.format(description))
+    def wipe(self):
+        expression = 'wipe(pixels)'
+        script_high.put(expression)
+        return 'ACK'
+    
+    
+    def powerup(self):
+        expression = 'powerup(pixels)'
+        script_high.put(expression)
         return 'ACK'
 
-    def clrAnimations(self):
-        with script.mutex:
-            script.queue.clear()
-        print('Script cleared')
+
+    def powerdown(self):
+        expression = 'powerdown(pixels)'
+        script_high.put(expression)
         return 'ACK'
+
+
+    def next(self):
+        expression = 'next(pixels)'
+        script_high.put(expression)
+        return 'ACK'
+
+
+    def previous(self):
+        expression = 'previous(pixels)'
+        script_high.put(expression)
+        return 'ACK'
+
 
     def chgBrightness(self, value):
-        script.put(Animation('chgbrightness', value=value))
-        print('Brightness changed to {0}'.format(value))
+        expression = 'chgBrightness(pixels, {0})'.format(value)
+        script_high.put(expression)
+        return 'ACK'
+
+    
+    def chgVolume(self, pixels, value, change):
+        expression = 'chgVolume(pixels, {0}, {1})'.format(value, change)
+        script_high.put(expression)
+        return 'ACK'
+
+
+    def carddetected(self):
+        expression = 'carddetected(pixels)'
+        script_high.put(expression)
+        return 'ACK'
+
+    def cardremoved(self):
+        expression = 'cardremoved(pixels)'
+        script_high.put(expression)
         return 'ACK'
 
 
@@ -95,18 +121,20 @@ class ServerThread(threading.Thread):
         self.localServer.serve_forever()
 
 
-def wipe(pixels, color):
-    """ Wipe color across strip a pixel at a time """
-    print('Wipe the strip with color {0}'.format(color))
+def wipe(pixels):
+    """ Wipe strip a pixel at a time, persistant """
+    print('Wipe the strip')
+    color = BLACK
     for i in range(LED_NUMBER):
         pixels.setPixelColor(i, color)
         pixels.show()
         time.sleep(DELAY)
 
 
-def powerup(pixels, color):
-    """ Phoniebox powerup """
-    print('Powerup sequence with color {0}'.format(color))
+def powerup(pixels):
+    """ Phoniebox powerup sequence, persistant """
+    print('Powerup sequence')
+    color = TEAL
     # First LED in ring
     pixels.setPixelColor(RING_ONE_START, color)
     pixels.show()
@@ -124,10 +152,10 @@ def powerup(pixels, color):
     pixels.show()
     time.sleep(DELAY)
 
-
-def powerdown(pixels, color):
-    """ Phoniebox powerdown """
-    print('Powerdown sequence with color {0}'.format(color))
+def powerdown(pixels):
+    """ Phoniebox powerdown sequence, persistant"""
+    print('Powerdown sequence')
+    color = BLACK
     # Last LED in ring
     pixels.setPixelColor(RING_ONE_HALF, color)
     pixels.show()
@@ -146,38 +174,54 @@ def powerdown(pixels, color):
     time.sleep(DELAY)
 
 
-def nextsong(pixels, color):
-    """ Play next song in playlist """
-    print('Next sequence with color {0}'.format(color))
+def nextsong(pixels):
+    """ Next song sequence, non-persitant """
+    print('Next song sequence')
+    color = TEAL
+    # Animation
     for i in range(LED_NUMBER):
-        print(i)
+        pixels.setPixelColor(i, color)
+        pixels.show()
         time.sleep(DELAY)
+    # Clear all pixels at once
+    for i in range (LED_NUMBER):
+        pixels.setPixelColor(i, BLACK)
+    pixels.show()
+    time.sleep(DELAY)
 
 
-def previoussong(pixles, color):
-    """ Play previous song in playlist """
+def previoussong(pixels, color):
+    """ Previous song sequence, non-persitant """
     print('Previous sequence with color {0}'.format(color))
-    for i in range(LED_NUMBER):
-        print(i)
+    color = TEAL
+    # Animation
+    for i in range(LED_NUMBER, 0, 1):
+        pixels.setPixelColor(i, color)
+        pixels.show()
         time.sleep(DELAY)
+    # Clear all pixels at once
+    for i in range (LED_NUMBER):
+        pixels.setPixelColor(i, BLACK)
+    pixels.show()
+    time.sleep(DELAY)
 
 
-def chgvolume(pixles, color, value, change):
-    """ Volume change """
-    print('Volume change from value {0} to {1} sequence with color {2}'
+def chgvolume(pixels, value, change):
+    """ Volume change sequence, non-persistant"""
+    print('Volume change from value {0} to {1} sequence'
           .format(value, (value + change), color))
     for i in range(LED_NUMBER):
         print(i)
         time.sleep(DELAY)
 
 
-def chgbrightness(value):
+def chgbrightness(pixels, value):
     """ Change brightness of the LEDs """
     print('Brightness change to {0}'.format(value))
     pixels.setBrightness(value)
 
 
-def carddetected(color):
+def carddetected(pixels, color):
     """ A card was detected """
     print('Card detected sequence with color {0}'.format(color))
     for i in range(LED_NUMBER):
@@ -185,7 +229,7 @@ def carddetected(color):
         time.sleep(DELAY)
 
 
-def cardremoved(color):
+def cardremoved(pixels, color):
     """ A card was removed """
     print('Card removed sequence with color {0}'.format(color))
     for i in range(LED_NUMBER):
@@ -193,9 +237,9 @@ def cardremoved(color):
         time.sleep(DELAY)
 
 
-def accelerate(color):
-    """ A pixel is accelerated until all LEDs are filled """
-    print("ACCELERATE!")
+def wait(pixels, color):
+    """ An animation which can be played indefinitly, persitant """
+    print('Please hold the line ...')
     for i in range(LED_NUMBER):
         print(i)
         time.sleep(DELAY)
@@ -211,16 +255,17 @@ if __name__ == '__main__':
                         help='clear the display on exit')
     args = parser.parse_args()
 
-    # Create the queue
-    script = queue.Queue()
+    # Create the queues
+    script_high = queue.Queue()
+    script_low = queue.Queue()
 
     # Create server thread and start it
     server = ServerThread()
     server.start()
 
     # Queue powerup animation
-    script.put(Animation('powerup', TEAL))
-    script.put(Animation('wipe', BLACK))
+    script_high.put('powerup(pixels)')
+    script_high.put('wipe(pixels)')
 
     # Create Neopixel object with appropriate configuration
     pixels = PixelStrip(LED_NUMBER,
@@ -244,24 +289,16 @@ if __name__ == '__main__':
     try:
 
         while True:
-            while not script.empty():
-                animation = script.get()
-                if animation.description == 'wipe':
-                    wipe(pixels, animation.color)
-                elif animation.description == 'powerup':
-                    powerup(pixels, animation.color)
-                elif animation.description == 'powerdown':
-                    powerdown(pixels, animation.color)
-                elif animation.description == 'chgvolume':
-                    chgvolume(pixels,
-                              animation.color,
-                              animation.value,
-                              animation.change)
-                elif animation.description == 'chgbrightness':
-                    chgbrightness(animation.value)
-                else:
-                    pass
+            while not script_high.empty():
+                expression = script_high.get()
+                eval(expression)
+            if not script_low.empty:
+                expression = script_low.get()
+                eval(expression)
+            print("Main thread")
+            time.sleep(2)
+
 
     except KeyboardInterrupt:
         if args.clear:
-            wipe(pixels, BLACK)
+            wipe(pixels)
