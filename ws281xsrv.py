@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*
 
 import time
@@ -58,43 +58,36 @@ class RemoteProcedures:
         expression = 'wipe(pixels)'
         script_high.put(expression)
         return 'ACK'
-    
-    
+
     def powerup(self):
         expression = 'powerup(pixels)'
         script_high.put(expression)
         return 'ACK'
-
 
     def powerdown(self):
         expression = 'powerdown(pixels)'
         script_high.put(expression)
         return 'ACK'
 
-
     def next(self):
         expression = 'next(pixels)'
         script_high.put(expression)
         return 'ACK'
-
 
     def previous(self):
         expression = 'previous(pixels)'
         script_high.put(expression)
         return 'ACK'
 
-
     def chgBrightness(self, value):
         expression = 'chgBrightness(pixels, {0})'.format(value)
         script_high.put(expression)
         return 'ACK'
 
-    
     def chgVolume(self, pixels, value, change):
         expression = 'chgVolume(pixels, {0}, {1})'.format(value, change)
         script_high.put(expression)
         return 'ACK'
-
 
     def carddetected(self):
         expression = 'carddetected(pixels)'
@@ -152,6 +145,7 @@ def powerup(pixels):
     pixels.show()
     time.sleep(DELAY)
 
+
 def powerdown(pixels):
     """ Phoniebox powerdown sequence, persistant"""
     print('Powerdown sequence')
@@ -184,7 +178,7 @@ def nextsong(pixels):
         pixels.show()
         time.sleep(DELAY)
     # Clear all pixels at once
-    for i in range (LED_NUMBER):
+    for i in range(LED_NUMBER):
         pixels.setPixelColor(i, BLACK)
     pixels.show()
     time.sleep(DELAY)
@@ -200,7 +194,7 @@ def previoussong(pixels, color):
         pixels.show()
         time.sleep(DELAY)
     # Clear all pixels at once
-    for i in range (LED_NUMBER):
+    for i in range(LED_NUMBER):
         pixels.setPixelColor(i, BLACK)
     pixels.show()
     time.sleep(DELAY)
@@ -208,8 +202,9 @@ def previoussong(pixels, color):
 
 def chgvolume(pixels, value, change):
     """ Volume change sequence, non-persistant"""
-    print('Volume change from value {0} to {1} sequence'
-          .format(value, (value + change), color))
+    color = TEAL
+    text = 'Volume change from value {0} to {1} sequence'
+    print(text.format(value, (value + change), color))
     for i in range(LED_NUMBER):
         print(i)
         time.sleep(DELAY)
@@ -279,9 +274,6 @@ if __name__ == '__main__':
     # Intialize the library (must be called once before other functions)
     pixels.begin()
 
-    # Clear all pixels
-    pixels.clear()
-
     print('Press Ctrl-C to quit.')
     if not args.clear:
         print('Use "-c" argument to clear LEDs on exit')
@@ -297,7 +289,6 @@ if __name__ == '__main__':
                 eval(expression)
             print("Main thread")
             time.sleep(2)
-
 
     except KeyboardInterrupt:
         if args.clear:
